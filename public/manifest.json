@@ -1,6 +1,6 @@
 {
   "name": "catnoted canvas",
-  "short_name": "catnoted",
+  "short_name": "catnoted canvas",
   "description": "Local-first workspace canvas",
   "start_url": "/",
   "display": "standalone",
@@ -8,12 +8,12 @@
   "theme_color": "#14110B",
   "icons": [
     {
-      "src": "/vercel.svg",
+      "src": "/icon.svg",
       "sizes": "192x192",
       "type": "image/svg+xml"
     },
     {
-      "src": "/vercel.svg",
+      "src": "/icon.svg",
       "sizes": "512x512",
       "type": "image/svg+xml"
     }

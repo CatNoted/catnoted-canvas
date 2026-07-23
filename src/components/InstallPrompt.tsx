@@ -71,7 +71,7 @@ export function InstallPrompt() {
     <div className="fixed bottom-4 right-4 z-[9999]">
       <button
         onClick={handleInstallClick}
-        className="px-4 py-2 bg-[#F2A93B] text-[#14110B] rounded shadow-lg hover:bg-[#d99735] transition-colors font-bold text-sm"
+        className="px-4 py-2 bg-amber text-void rounded shadow-lg hover:bg-amber/90 transition-colors font-bold text-sm"
       >
         Install app
       </button>

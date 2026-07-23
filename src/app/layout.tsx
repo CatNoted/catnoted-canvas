@@ -9,6 +9,11 @@ export const metadata: Metadata = {
   description:
     "Local-first workspace canvas. Notion structure, Miro freedom. Your data stays in your browser.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

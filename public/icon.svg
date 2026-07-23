@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#14110B" stroke="#F2A93B" stroke-width="24"/>
+
+  <!-- Grid lines (retro canvas feel) -->
+  <path d="M128 24v464M256 24v464M384 24v464M24 128h464M24 256h464M24 384h464" stroke="#EDE6D6" stroke-width="4" stroke-opacity="0.1" stroke-dasharray="8 8"/>
+
+  <!-- Stylized Cat/Canvas Brand Icon in the center -->
+  <path d="M156 180l48 64h104l48-64M156 320l48-64M356 320l-48-64" stroke="#7FA26A" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- Terminal cursor block / head -->
+  <rect x="204" y="212" width="104" height="88" rx="16" fill="#14110B" stroke="#F2A93B" stroke-width="16"/>
+
+  <!-- Cat Whisker/Grid marks -->
+  <path d="M140 256h40M332 256h40M224 240l8 8-8 8M288 240l-8 8 8 8" stroke="#EDE6D6" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
