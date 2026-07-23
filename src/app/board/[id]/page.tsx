@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import type { Editor } from "tldraw";
 import { getBoard, markBoardOpened } from "@/lib/db";
 import { CanvasCollabWrapper } from "@/components/canvas/CanvasCollabWrapper";
-import { ArrowLeftIcon, ShareIcon } from "@/components/icons";
+import { ArrowLeftIcon, ShareIcon, LogoIcon } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ShareModal } from "@/components/ShareModal";
@@ -86,6 +86,14 @@ export default function BoardPage({
         >
           <ArrowLeftIcon width={20} height={20} />
         </Link>
+        <div className="flex items-center gap-1.5 border-r border-paper/15 pr-3">
+          <span className="text-amber">
+            <LogoIcon width={18} height={18} />
+          </span>
+          <span className="text-xs font-bold uppercase tracking-wider text-paper/60 hidden sm:inline">
+            canvas
+          </span>
+        </div>
         <span className="font-semibold text-paper">
           {board === null
             ? "Loading..."
