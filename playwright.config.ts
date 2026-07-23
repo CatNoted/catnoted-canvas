@@ -13,7 +13,7 @@ export default defineConfig({
   reporter: 'list',
   use: {
     actionTimeout: 0,
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.BASE_URL || 'https://catnoted-canvas.vercel.app',
     trace: 'on-first-retry',
   },
   projects: [

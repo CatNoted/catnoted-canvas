@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE = process.env.BASE_URL || 'http://localhost:3000';
+const BASE = process.env.BASE_URL || 'https://catnoted-canvas.vercel.app';
 
 test.describe('catnoted-canvas blackbox smoke', () => {
   test('canvas app loads', async ({ page }) => {
@@ -10,7 +10,7 @@ test.describe('catnoted-canvas blackbox smoke', () => {
 
   test('login page fields are visible', async ({ page }) => {
     await page.goto(`${BASE}/login`);
-    await expect(page.locator('input[type="email"]')).toBeVisible();
+    await expect(page.getByPlaceholder("coolcat99")).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
   });
