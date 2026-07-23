@@ -11,5 +11,9 @@ export function createClient(): SupabaseClient {
     );
   }
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: process.env.NEXT_PUBLIC_COOKIE_DOMAIN
+      ? { domain: process.env.NEXT_PUBLIC_COOKIE_DOMAIN }
+      : undefined,
+  });
 }

@@ -12,14 +12,30 @@ export async function createClient(): Promise<SupabaseClient> {
     );
   }
 
+  const cookieStore = await cookies();
+
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
-        return (cookies() as any).getAll?.() ?? [];
+        if (typeof (cookieStore as any).getAll === "function") {
+          return (cookieStore as any).getAll();
+        }
+        return [];
       },
-      setAll() {
-        // no-op for server-only routes here
+      setAll(cookiesToSet: any[]) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }: { name: string; value: string; options: any }) => {
+            if (typeof (cookieStore as any).set === "function") {
+              (cookieStore as any).set(name, value, options);
+            }
+          });
+        } catch {
+          // Ignore errors when called from Server Components where cookies cannot be set
+        }
       },
     },
+    cookieOptions: process.env.NEXT_PUBLIC_COOKIE_DOMAIN
+      ? { domain: process.env.NEXT_PUBLIC_COOKIE_DOMAIN }
+      : undefined,
   });
 }
