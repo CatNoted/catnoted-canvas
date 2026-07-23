@@ -116,7 +116,7 @@ export default function Home() {
     setName("");
     setCreating(false);
     setError("");
-    await refresh(user);
+    await refresh();
     window.location.href = `/board/${board.id}`;
   }
 
@@ -130,7 +130,7 @@ export default function Home() {
     } else {
       await deleteBoard(id);
     }
-    await refresh(user);
+    await refresh();
   }
 
   async function handleRename(id: string) {
@@ -149,7 +149,7 @@ export default function Home() {
       } else {
         await renameBoard(id, editName);
       }
-      await refresh(user);
+      await refresh();
     }
     setEditingId((current) => (current === id ? null : current));
   }
