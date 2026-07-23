@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   listBoards,
@@ -17,8 +17,9 @@ import {
   LogoIcon,
   EditIcon,
 } from "@/components/icons";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -31,6 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { createClient } from "@/lib/supabase/client";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const useSupabase = Boolean(SUPABASE_URL);
@@ -43,9 +45,11 @@ export default function Home() {
   const [boardToDelete, setBoardToDelete] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [user, setUser] = useState<any | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(useSupabase);
 
-  async function refresh() {
-    if (useSupabase) {
+  const refresh = useCallback(async (currentUser: any) => {
+    if (useSupabase && currentUser) {
       const res = await fetch("/api/boards");
       if (res.ok) {
         const json = (await res.json()) as BoardMeta[];
@@ -57,15 +61,37 @@ export default function Home() {
       setBoards(await listBoards());
     }
     setLoading(false);
-  }
+  }, []);
 
   useEffect(() => {
-    refresh();
-  }, []);
+    if (useSupabase) {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data: { user: currentUser } }) => {
+        setUser(currentUser);
+        setCheckingAuth(false);
+        refresh(currentUser);
+      }).catch(() => {
+        setCheckingAuth(false);
+        refresh(null);
+      });
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        refresh(currentUser);
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    } else {
+      refresh(null);
+    }
+  }, [refresh]);
 
   async function handleCreate() {
     let board: BoardMeta;
-    if (useSupabase) {
+    if (useSupabase && user) {
       const res = await fetch("/api/boards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -82,12 +108,12 @@ export default function Home() {
     }
     setName("");
     setCreating(false);
-    await refresh();
+    await refresh(user);
     window.location.href = `/board/${board.id}`;
   }
 
   async function handleDelete(id: string) {
-    if (useSupabase) {
+    if (useSupabase && user) {
       const res = await fetch(`/api/boards/${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!res.ok) {
         console.error("Failed to delete board");
@@ -96,12 +122,12 @@ export default function Home() {
     } else {
       await deleteBoard(id);
     }
-    await refresh();
+    await refresh(user);
   }
 
   async function handleRename(id: string) {
     if (editName.trim()) {
-      if (useSupabase) {
+      if (useSupabase && user) {
         const res = await fetch(`/api/boards/${encodeURIComponent(id)}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -115,7 +141,7 @@ export default function Home() {
       } else {
         await renameBoard(id, editName);
       }
-      await refresh();
+      await refresh(user);
     }
     setEditingId((current) => (current === id ? null : current));
   }
@@ -126,7 +152,8 @@ export default function Home() {
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    await refresh();
+    setUser(null);
+    await refresh(null);
   }
 
   return (
@@ -143,15 +170,34 @@ export default function Home() {
             </p>
           </div>
         </div>
-        {useSupabase && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleLogout}
-            className="border-paper/20 text-paper/70 hover:bg-paper/5"
-          >
-            Logout
-          </Button>
+        {useSupabase && !checkingAuth && (
+          <div className="flex items-center gap-4">
+            {user ? (
+              <>
+                <span className="text-xs text-paper/60 hidden sm:inline">
+                  Logged in as {user.email}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="border-paper/20 text-paper/70 hover:bg-paper/5"
+                >
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  "border-amber/40 text-amber hover:bg-amber/5 hover:text-amber"
+                )}
+              >
+                Login
+              </Link>
+            )}
+          </div>
         )}
       </header>
 
