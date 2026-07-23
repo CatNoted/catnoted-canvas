@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "tw-animate-css";
+
+:root {
+  --void: #14110b;
+  --amber: #f2a93b;
+  --paper: #ede6d6;
+  --moss: #7fa26a;
+  --background: #14110b;
+  --foreground: #ede6d6;
+  --card: #12100c;
+  --card-foreground: #ede6d6;
+  --popover: #14110b;
+  --popover-foreground: #ede6d6;
+  --primary: #f2a93b;
+  --primary-foreground: #14110b;
+  --secondary: #7fa26a;
+  --secondary-foreground: #14110b;
+  --muted: #1f1c17;
+  --muted-foreground: #b8ad9a;
+  --accent: #7fa26a;
+  --accent-foreground: #14110b;
+  --destructive: #ef4444;
+  --destructive-foreground: #f2a93b;
+  --border: #2d2922;
+  --input: #2d2922;
+  --ring: #f2a93b;
+  --radius: 0.5rem;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--void);
+  color: var(--paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tl-container {
+  width: 100%;
+  height: 100%;
+}

@@ -1,0 +1,27 @@
+name: Branch Guard
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-direct-push:
+    name: Verify Commit Source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Commit Pull Request Association
+        run: |
+          echo "Checking if commit ${{ github.sha }} was merged via a Pull Request..."
+          
+          PR_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/pulls")
+          
+          PR_COUNT=$(echo "$PR_JSON" | jq '. | length')
+          
+          if [ "$PR_COUNT" -eq 0 ]; then
+            echo "::error::Direct push to main branch detected! All changes must be made via a Pull Request."
+            exit 1
+          else
+            echo "Commit is associated with $PR_COUNT Pull Request(s). Verification passed."
+          fi

@@ -1,0 +1,126 @@
+name: Event-driven PR Merge Gate
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - labeled
+      - unlabeled
+      - ready_for_review
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  pull-requests: write
+  contents: write
+  issues: write
+
+jobs:
+  merge-gate:
+    name: Auto-merge when CI is green
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    if: |
+      github.event_name == 'pull_request_target' &&
+      github.repository == 'CatNoted/catnoted-canvas' &&
+      github.event.pull_request.base.ref == 'main'
+
+    steps:
+      - name: Verify PR is green and mergeable
+        id: verify
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          echo "pr=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "head=$HEAD_REF" >> $GITHUB_OUTPUT
+
+          attempts=0
+          max_attempts=12
+          sleep_seconds=15
+
+          while [ $attempts -lt $max_attempts ]; do
+            status=$(gh pr view "$PR_NUMBER" --repo CatNoted/catnoted-canvas --json statusCheckRollup --jq '.statusCheckRollup | map(select(.workflowName != "Event-driven PR Merge Gate")) | map(.conclusion) | all(. == "SUCCESS")' || echo "false")
+            mergeable=$(gh pr view "$PR_NUMBER" --repo CatNoted/catnoted-canvas --json mergeable --jq '.mergeable' || echo "UNKNOWN")
+            is_draft=$(gh pr view "$PR_NUMBER" --repo CatNoted/catnoted-canvas --json isDraft --jq '.isDraft' || echo "true")
+            review=$(gh pr view "$PR_NUMBER" --repo CatNoted/catnoted-canvas --json reviewDecision --jq '.reviewDecision' || echo "NONE")
+
+            echo "attempt=$attempts status=$status mergeable=$mergeable draft=$is_draft review=$review"
+
+            if [ "$status" = "true" ] && [ "$mergeable" = "MERGEABLE" ] && [ "$is_draft" = "false" ]; then
+              if [ "$review" = "CHANGES_REQUESTED" ]; then
+                echo "review_blocked=true" >> $GITHUB_OUTPUT
+                echo "review_decision=$review" >> $GITHUB_OUTPUT
+                exit 0
+              fi
+              echo "green=true" >> $GITHUB_OUTPUT
+              echo "review_decision=$review" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            if [ "$mergeable" = "CONFLICTING" ]; then
+              echo "conflict=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            attempts=$((attempts + 1))
+            sleep $sleep_seconds
+          done
+
+          echo "timeout=true" >> $GITHUB_OUTPUT
+          exit 0
+
+      - name: Merge PR automatically
+        if: |
+          steps.verify.outputs.green == 'true' &&
+          steps.verify.outputs.review_decision != 'CHANGES_REQUESTED'
+        env:
+          PR_NUMBER: ${{ steps.verify.outputs.pr }}
+        run: |
+          set -euo pipefail
+          echo "Merging PR #$PR_NUMBER ..."
+          gh pr merge "$PR_NUMBER" --repo CatNoted/catnoted-canvas --squash --delete-branch --subject "chore: merge #$PR_NUMBER"
+          echo "Merged PR #$PR_NUMBER"
+
+      - name: Comment on conflict or delayed merge
+        if: |
+          steps.verify.outputs.conflict == 'true' ||
+          steps.verify.outputs.review_blocked == 'true' ||
+          steps.verify.outputs.timeout == 'true'
+        env:
+          PR_NUMBER: ${{ steps.verify.outputs.pr }}
+          IS_CONFLICT: ${{ steps.verify.outputs.conflict }}
+          IS_REVIEW_BLOCKED: ${{ steps.verify.outputs.review_blocked }}
+        run: |
+          set -euo pipefail
+          if [ "$IS_CONFLICT" = "true" ]; then
+            msg="Automerge cancelled: PR has merge conflicts. Please resolve conflicts."
+          elif [ "$IS_REVIEW_BLOCKED" = "true" ]; then
+            msg="Automerge cancelled: review requested changes (CHANGES_REQUESTED)."
+          else
+            msg="Automerge delayed: CI did not become green in time. Will retry on next update."
+          fi
+          gh pr comment "$PR_NUMBER" --repo CatNoted/catnoted-canvas --body "$msg"
+
+  jules-issue-trigger:
+    name: Jules issue trigger observer
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.repository == 'CatNoted/catnoted-canvas' &&
+      github.event.issue.pull_request == null &&
+      (contains(github.event.comment.body, '@jules') || contains(github.event.issue.labels.*.name, 'jules'))
+    steps:
+      - name: Confirm Jules trigger
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          ISSUE_LABELS: ${{ toJSON(github.event.issue.labels.*.name) }}
+        run: |
+          echo "Issue #$ISSUE_NUMBER has Jules trigger detected"
+          echo "Comment: $COMMENT_BODY"
+          echo "Labels: $ISSUE_LABELS"

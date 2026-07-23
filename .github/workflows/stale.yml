@@ -1,0 +1,26 @@
+name: Stale issue and PR management
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-issue-message: 'This issue is stale because it has been open 7 days with no activity. It will be closed in 2 days unless updated.'
+          stale-pr-message: 'This PR is stale because it has been open 7 days with no activity. It will be closed in 2 days unless updated.'
+          close-issue-message: 'Closing this stale issue.'
+          close-pr-message: 'Closing this stale PR.'
+          days-before-stale: 7
+          days-before-close: 2
+          stale-issue-label: 'stale'
+          stale-pr-label: 'stale'
