@@ -14,17 +14,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Use letters, numbers, dots, underscores, or hyphens only." }, { status: 400 });
     }
 
+    if (password.length < 6) {
+      return NextResponse.json({ ok: false, error: "Password must be at least 6 characters." }, { status: 400 });
+    }
+
     const email = `${trimmed.toLowerCase()}@catnoted.app`;
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { username: trimmed } },
+    });
 
     if (error) {
       const lower = error.message.toLowerCase();
-      if (lower.includes("invalid login") || lower.includes("not found")) {
-        return NextResponse.json({ ok: false, error: "Username or password is incorrect." }, { status: 400 });
-      }
-      if (lower.includes("email not confirmed")) {
-        return NextResponse.json({ ok: false, error: "This account is not confirmed yet." }, { status: 400 });
+      if (lower.includes("user already registered")) {
+        return NextResponse.json({ ok: false, error: "That username is taken. Try signing in instead." }, { status: 400 });
       }
       return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
     }

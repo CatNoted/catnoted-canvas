@@ -43,6 +43,9 @@ yarn-error.log*
 
 # testing
 /coverage
+/test-results
+server_output.log
+*.log
 
 # jules/agent junk
 pr_body.txt
