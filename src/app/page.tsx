@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import {
   listBoards,
   createBoard,
@@ -43,29 +44,60 @@ export default function Home() {
   const [boardToDelete, setBoardToDelete] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(useSupabase);
 
-  async function refresh() {
-    if (useSupabase) {
-      const res = await fetch("/api/boards");
-      if (res.ok) {
-        const json = (await res.json()) as BoardMeta[];
-        setBoards(json);
-      } else {
+  const refresh = useCallback(async () => {
+    if (useSupabase && user) {
+      try {
+        const res = await fetch("/api/boards");
+        if (res.ok) {
+          const json = (await res.json()) as BoardMeta[];
+          setBoards(json);
+        } else {
+          setBoards(await listBoards());
+        }
+      } catch {
         setBoards(await listBoards());
       }
     } else {
       setBoards(await listBoards());
     }
     setLoading(false);
-  }
+  }, [user]);
 
   useEffect(() => {
-    refresh();
+    if (useSupabase) {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data: { user: currentUser } }) => {
+        setUser(currentUser);
+        setAuthLoading(false);
+      }).catch(() => {
+        setAuthLoading(false);
+      });
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null);
+        setAuthLoading(false);
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    } else {
+      setAuthLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!authLoading) {
+      refresh();
+    }
+  }, [authLoading, refresh]);
 
   async function handleCreate() {
     let board: BoardMeta;
-    if (useSupabase) {
+    if (useSupabase && user) {
       const res = await fetch("/api/boards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -87,7 +119,7 @@ export default function Home() {
   }
 
   async function handleDelete(id: string) {
-    if (useSupabase) {
+    if (useSupabase && user) {
       const res = await fetch(`/api/boards/${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!res.ok) {
         console.error("Failed to delete board");
@@ -101,7 +133,7 @@ export default function Home() {
 
   async function handleRename(id: string) {
     if (editName.trim()) {
-      if (useSupabase) {
+      if (useSupabase && user) {
         const res = await fetch(`/api/boards/${encodeURIComponent(id)}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -125,6 +157,10 @@ export default function Home() {
   }
 
   async function handleLogout() {
+    if (useSupabase) {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    }
     await fetch("/api/auth/logout", { method: "POST" });
     await refresh();
   }
@@ -143,15 +179,32 @@ export default function Home() {
             </p>
           </div>
         </div>
-        {useSupabase && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleLogout}
-            className="border-paper/20 text-paper/70 hover:bg-paper/5"
-          >
-            Logout
-          </Button>
+        {useSupabase && !authLoading && (
+          user ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-paper/60 font-medium hidden sm:inline">
+                {user.email}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="border-paper/20 text-paper/70 hover:bg-paper/5"
+              >
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <Link href="/login" passHref legacyBehavior>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-amber/40 bg-amber/10 text-amber hover:bg-amber/20 hover:text-amber font-semibold"
+              >
+                Sign in
+              </Button>
+            </Link>
+          )
         )}
       </header>
 

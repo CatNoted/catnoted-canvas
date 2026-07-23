@@ -38,11 +38,18 @@ export default function BoardPage({
     const active = Boolean(supabaseUrl);
     setUseSupabase(active);
 
+    let subscription: any = null;
+
     if (active) {
       const supabase = createClient();
       supabase.auth.getUser().then(({ data: { user: currentUser } }) => {
         setUser(currentUser);
       });
+
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null);
+      });
+      subscription = data.subscription;
     }
 
     async function loadBoard() {
@@ -74,6 +81,12 @@ export default function BoardPage({
     }
 
     loadBoard();
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, [id]);
 
   return (
@@ -93,7 +106,7 @@ export default function BoardPage({
               ? "Board not found"
               : board.name}
         </span>
-        {useSupabase && board && board !== undefined && (
+        {useSupabase && user && board && board !== undefined && (
           <div className="ml-auto flex items-center gap-2">
             <Button
               onClick={() => setIsShareOpen(true)}
@@ -126,7 +139,7 @@ export default function BoardPage({
         <AiSidebar editor={editor} />
       </div>
 
-      {useSupabase && board && board !== undefined && (
+      {useSupabase && user && board && board !== undefined && (
         <ShareModal
           isOpen={isShareOpen}
           onClose={() => setIsShareOpen(false)}
