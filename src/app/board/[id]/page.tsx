@@ -144,7 +144,7 @@ export default function BoardPage({
             <CanvasCollabWrapper boardId={id}>
               <Canvas boardId={id} onEditorMount={setEditor} />
             </CanvasCollabWrapper>
-            <AiSidebar editor={editor} />
+            {editor && <AiSidebar editor={editor} />}
           </>
         )}
       </div>
