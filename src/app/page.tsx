@@ -44,6 +44,7 @@ export default function Home() {
   const [boardToDelete, setBoardToDelete] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [error, setError] = useState("");
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(useSupabase);
 
@@ -96,16 +97,16 @@ export default function Home() {
   }, [authLoading, refresh]);
 
   async function handleCreate() {
-    let board: BoardMeta;
+    let board: BoardMeta | undefined;
     if (useSupabase && user) {
       const res = await fetch("/api/boards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
       });
-      const json = (await res.json()) as { board?: BoardMeta; error?: string };
+      const json = (await res.json()) as { board?: BoardMeta; dataset?: { id?: string }; error?: string };
       if (!res.ok || !json.board) {
-        console.error(json.error);
+        setError(json.error || "Failed to create board");
         return;
       }
       board = json.board;
@@ -114,7 +115,8 @@ export default function Home() {
     }
     setName("");
     setCreating(false);
-    await refresh();
+    setError("");
+    await refresh(user);
     window.location.href = `/board/${board.id}`;
   }
 
@@ -122,13 +124,13 @@ export default function Home() {
     if (useSupabase && user) {
       const res = await fetch(`/api/boards/${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!res.ok) {
-        console.error("Failed to delete board");
+        setError("Failed to delete board");
         return;
       }
     } else {
       await deleteBoard(id);
     }
-    await refresh();
+    await refresh(user);
   }
 
   async function handleRename(id: string) {
@@ -140,14 +142,14 @@ export default function Home() {
           body: JSON.stringify({ name: editName }),
         });
         if (!res.ok) {
-          console.error("Failed to rename board");
+          setError("Failed to rename board");
           setEditingId((current) => (current === id ? null : current));
           return;
         }
       } else {
         await renameBoard(id, editName);
       }
-      await refresh();
+      await refresh(user);
     }
     setEditingId((current) => (current === id ? null : current));
   }
@@ -255,6 +257,12 @@ export default function Home() {
           </Button>
         </div>
       )}
+
+      {error ? (
+        <div className="mb-6 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+          {error}
+        </div>
+      ) : null}
 
       {loading ? (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
