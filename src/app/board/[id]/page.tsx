@@ -132,11 +132,13 @@ export default function BoardPage({
             </Link>
           </div>
         ) : board === null ? null : (
-          <CanvasCollabWrapper boardId={id}>
-            <Canvas boardId={id} onEditorMount={setEditor} />
-          </CanvasCollabWrapper>
+          <>
+            <CanvasCollabWrapper boardId={id}>
+              <Canvas boardId={id} onEditorMount={setEditor} />
+            </CanvasCollabWrapper>
+            <AiSidebar editor={editor} />
+          </>
         )}
-        <AiSidebar editor={editor} />
       </div>
 
       {useSupabase && user && board && board !== undefined && (
